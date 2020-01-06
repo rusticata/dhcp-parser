@@ -106,6 +106,14 @@ fn parse_message_type_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
     Ok((i3, DHCPOption::MessageType(DHCPMessageType(val))))
 }
 
+// Server Identifier (54)
+fn parse_server_identifier_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
+    let (i1, _) = verify(be_u8, |x| *x == 54)(i)?;
+    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
+    let (i3, addr) = parse_addr_v4(i2)?;
+    Ok((i3, DHCPOption::ServerIdentifier(addr)))
+}
+
 // Parameter Request List (55)
 fn parse_parameter_request_list_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
     let (i1, _) = verify(be_u8, |x| *x == 55)(i)?;
@@ -131,6 +139,14 @@ fn parse_maximum_message_size_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
     let (i2, _) = verify(be_u8, |x| *x == 2)(i1)?;
     let (i3, val) = be_u16(i2)?;
     Ok((i3, DHCPOption::MaximumSize(val)))
+}
+
+// Renewal (T1) Time Value (58)
+fn parse_renewal_time_value_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
+    let (i1, _) = verify(be_u8, |x| *x == 58)(i)?;
+    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
+    let (i3, val) = be_u32(i2)?;
+    Ok((i3, DHCPOption::Renewal(val)))
 }
 
 // Client Identifier (61)
@@ -165,9 +181,11 @@ fn parse_options(i: &[u8]) -> IResult<&[u8], Vec<DHCPOption>> {
             51 => parse_address_lease_time_option(i)?,
             52 => parse_option_overload_option(i)?,
             53 => parse_message_type_option(i)?,
+            54 => parse_server_identifier_option(i)?,
             55 => parse_parameter_request_list_option(i)?,
             56 => parse_message_option(i)?,
             57 => parse_maximum_message_size_option(i)?,
+            58 => parse_renewal_time_value_option(i)?,
             61 => parse_client_identifier_option(i)?,
             0xff => {
                 acc.push(DHCPOption::End);

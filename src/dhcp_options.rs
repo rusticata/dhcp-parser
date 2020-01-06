@@ -16,12 +16,16 @@ pub enum DHCPOption<'a> {
     OptionOverload(u8),
     /// Message Type (53)
     MessageType(DHCPMessageType),
+    /// Server Identifier (54)
+    ServerIdentifier(Ipv4Addr),
     /// Parameter Request List (55)
     ParameterRequestList(DHCPParameterRequest<'a>),
     /// Message (56)
     Message(&'a [u8]),
     /// Maximum DHCP Message Size (57)
     MaximumSize(u16),
+    /// Renewal (T1) Time Value (58)
+    Renewal(u32),
     /// Client Identifier (61)
     ClientIdentifier(&'a [u8]),
     /// Generic (unparsed) option
@@ -53,9 +57,11 @@ impl<'a> DHCPOption<'a> {
             DHCPOption::AddressLeaseTime(_) => 51,
             DHCPOption::OptionOverload(_) => 52,
             DHCPOption::MessageType(_) => 53,
+            DHCPOption::ServerIdentifier(_) => 54,
             DHCPOption::ParameterRequestList(_) => 55,
             DHCPOption::Message(_) => 56,
             DHCPOption::MaximumSize(_) => 57,
+            DHCPOption::Renewal(_) => 58,
             DHCPOption::ClientIdentifier(_) => 61,
             DHCPOption::Generic(opt) => opt.t,
             DHCPOption::End => 255,
