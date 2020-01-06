@@ -157,6 +157,14 @@ fn parse_rebinding_time_value_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
     Ok((i3, DHCPOption::Rebinding(val)))
 }
 
+// Class Identifier (60)
+fn parse_class_identifier_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
+    let (i1, _) = verify(be_u8, |x| *x == 60)(i)?;
+    let (i2, len) = verify(be_u8, |x| *x >= 1)(i1)?;
+    let (i3, val) = take(len)(i2)?;
+    Ok((i3, DHCPOption::ClassIdentifier(val)))
+}
+
 // Client Identifier (61)
 fn parse_client_identifier_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
     let (i1, _) = verify(be_u8, |x| *x == 61)(i)?;
@@ -195,6 +203,7 @@ fn parse_options(i: &[u8]) -> IResult<&[u8], Vec<DHCPOption>> {
             57 => parse_maximum_message_size_option(i)?,
             58 => parse_renewal_time_value_option(i)?,
             59 => parse_rebinding_time_value_option(i)?,
+            60 => parse_class_identifier_option(i)?,
             61 => parse_client_identifier_option(i)?,
             0xff => {
                 acc.push(DHCPOption::End);

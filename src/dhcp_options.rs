@@ -28,6 +28,8 @@ pub enum DHCPOption<'a> {
     Renewal(u32),
     /// Rebinding (T2) Time Value (59)
     Rebinding(u32),
+    /// Class-identifier (60)
+    ClassIdentifier(&'a [u8]),
     /// Client Identifier (61)
     ClientIdentifier(&'a [u8]),
     /// Generic (unparsed) option
@@ -65,6 +67,7 @@ impl<'a> DHCPOption<'a> {
             DHCPOption::MaximumSize(_) => 57,
             DHCPOption::Renewal(_) => 58,
             DHCPOption::Rebinding(_) => 59,
+            DHCPOption::ClassIdentifier(_) => 60,
             DHCPOption::ClientIdentifier(_) => 61,
             DHCPOption::Generic(opt) => opt.t,
             DHCPOption::End => 255,
