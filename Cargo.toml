@@ -1,0 +1,12 @@
+[package]
+description = "Parser for the DHCP protocol"
+license = "MIT/Apache-2.0"
+name = "dhcp-parser2"
+version = "0.1.0"
+authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
+categories = ["network-programming", "parser-implementations"]
+edition = "2018"
+
+[dependencies]
+nom = "5.0"
+rusticata-macros = "2.0"
