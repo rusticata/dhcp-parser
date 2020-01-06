@@ -1,4 +1,6 @@
-//! Parser for the DHCP Protocol
+//! # DHCP Parser
+//!
+//! This crate contains a parser written in pure Rust for the DHCP protocol.
 //!
 //! See also:
 //! - [RFC 1541](https://tools.ietf.org/html/rfc1541): Dynamic Host Configuration Protocol

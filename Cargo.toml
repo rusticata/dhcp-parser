@@ -1,12 +1,29 @@
 [package]
 description = "Parser for the DHCP protocol"
 license = "MIT/Apache-2.0"
+keywords = ["DHCP","protocol","parser","nom"]
+homepage = "https://github.com/rusticata/dhcp-parser"
+repository = "https://github.com/rusticata/dhcp-parser.git"
+documentation = "https://docs.rs/dhcp-parser"
 name = "dhcp-parser2"
 version = "0.1.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["network-programming", "parser-implementations"]
+readme = "README.md"
 edition = "2018"
+
+include = [
+  "LICENSE-*",
+  ".gitignore",
+  ".travis.yml",
+  "Cargo.toml",
+  "src/*.rs",
+  "assets/*"
+]
 
 [dependencies]
 nom = "5.0"
 rusticata-macros = "2.0"
+
+[badges]
+travis-ci = { repository = "rusticata/dhcp-parser" }

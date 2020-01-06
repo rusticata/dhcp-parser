@@ -1,0 +1,25 @@
+language: rust
+sudo: false
+matrix:
+  include:
+    - rust: stable
+      env:
+       - NAME="stable"
+       - FEATURES=''
+    - rust: stable
+      env:
+       - NAME="stable,fmt"
+       - FEATURES=''
+       - RUSTFMT=yes
+    - rust: nightly
+      env:
+       - NAME="nightly"
+       - FEATURES=''
+before_script:
+    - ([ "$RUSTFMT" != yes ] || rustup component add rustfmt)
+script:
+    - ([ "$RUSTFMT" != yes ] || cargo fmt --all -- --check)
+    - |
+        cargo build --verbose --features "$FEATURES" &&
+        cargo test --verbose --features "$FEATURES" &&
+        ([ "$BENCH" != 1 ] || cargo bench --verbose --features "$FEATURES")

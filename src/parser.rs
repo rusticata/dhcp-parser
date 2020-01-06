@@ -122,10 +122,7 @@ fn parse_message_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
     let (i1, _) = verify(be_u8, |x| *x == 56)(i)?;
     let (i2, len) = verify(be_u8, |x| *x > 0)(i1)?;
     let (i3, val) = take(len)(i2)?;
-    Ok((
-        i3,
-        DHCPOption::Message(val)
-    ))
+    Ok((i3, DHCPOption::Message(val)))
 }
 
 // Maximum DHCP Message Size (57)
