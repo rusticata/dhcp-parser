@@ -33,20 +33,20 @@ pub enum DHCPOption<'a> {
     /// Client Identifier (61)
     ClientIdentifier(&'a [u8]),
     /// Generic (unparsed) option
-    Generic(DHCPGenericOption),
+    Generic(DHCPGenericOption<'a>),
     /// End of options (255)
     End,
 }
 
 /// A DHCP Unknown Option
 #[derive(Debug)]
-pub struct DHCPGenericOption {
+pub struct DHCPGenericOption<'a> {
     /// Tag
     pub t: u8,
     /// Length
     pub l: u8,
     /// Value
-    pub v: Vec<u8>,
+    pub v: &'a [u8],
 }
 
 // --------- helpers ------------

@@ -1,55 +1,65 @@
 use crate::dhcp::*;
 use crate::dhcp_options::*;
 use nom::bytes::complete::take;
-use nom::combinator::verify;
+use nom::error::ErrorKind;
 use nom::multi::many0;
-use nom::number::streaming::{be_u16, be_u32, be_u8};
+use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::{do_parse, take, IResult};
 use std::net::Ipv4Addr;
+
+macro_rules! nom_err_return (
+    ($i:expr, $cond:expr, $err:expr) => (
+        {
+            if $cond {
+                return Err(::nom::Err::Error(::nom::error_position!($i, $err)));
+            }
+        }
+    );
+);
 
 /// Parse a DHCP message
 pub fn parse_dhcp_message(i: &[u8]) -> IResult<&[u8], DHCPMessage> {
     do_parse! {
         i,
         op: be_u8 >>
-        htype: be_u8 >>
-        hlen: be_u8 >>
-        hops: be_u8 >>
-        xid: be_u32 >>
-        secs: be_u16 >>
-        flags: be_u16 >>
-        ciaddr: parse_addr_v4 >>
-        yiaddr: parse_addr_v4 >>
-        siaddr: parse_addr_v4 >>
-        giaddr: parse_addr_v4 >>
-        chaddr: take!(16) >>
-        sname: take!(64) >>
-        file: take!(128) >>
-        // options
-        magic: take!(4) >>
-        options: parse_options >>
-        // padding
-        _padding: parse_padding >>
-        (
-            DHCPMessage{
-                op,
-                htype,
-                hlen,
-                hops,
-                xid,
-                secs,
-                flags,
-                ciaddr,
-                yiaddr,
-                siaddr,
-                giaddr,
-                chaddr: chaddr.to_owned(),
-                sname,
-                file,
-                magic: magic.to_owned(),
-                options,
-            }
-        )
+            htype: be_u8 >>
+            hlen: be_u8 >>
+            hops: be_u8 >>
+            xid: be_u32 >>
+            secs: be_u16 >>
+            flags: be_u16 >>
+            ciaddr: parse_addr_v4 >>
+            yiaddr: parse_addr_v4 >>
+            siaddr: parse_addr_v4 >>
+            giaddr: parse_addr_v4 >>
+            chaddr: take!(16) >>
+            sname: take!(64) >>
+            file: take!(128) >>
+            // options
+            magic: take!(4) >>
+            options: parse_options >>
+            // padding
+            _padding: parse_padding >>
+            (
+                DHCPMessage{
+                    op,
+                    htype,
+                    hlen,
+                    hops,
+                    xid,
+                    secs,
+                    flags,
+                    ciaddr,
+                    yiaddr,
+                    siaddr,
+                    giaddr,
+                    chaddr: chaddr.to_owned(),
+                    sname,
+                    file,
+                    magic: magic.to_owned(),
+                    options,
+                }
+            )
     }
 }
 
@@ -66,151 +76,88 @@ fn parse_padding(i: &[u8]) -> IResult<&[u8], ()> {
     Ok((rem, ()))
 }
 
-// Subnet Mask (0)
-fn parse_subnet_mask_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 1)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
-    let (i3, addr) = parse_addr_v4(i2)?;
-    Ok((i3, DHCPOption::SubnetMask(addr)))
-}
-
-// Requested IP Address (50)
-fn parse_requested_ip_address_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 50)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
-    let (i3, addr) = parse_addr_v4(i2)?;
-    Ok((i3, DHCPOption::RequestedIPAddress(addr)))
-}
-
-// IP Address Lease Time (51)
-fn parse_address_lease_time_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 51)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
-    let (i3, val) = be_u32(i2)?;
-    Ok((i3, DHCPOption::AddressLeaseTime(val)))
-}
-
-// Option Overload (52)
-fn parse_option_overload_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 52)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 1)(i1)?;
-    let (i3, val) = be_u8(i2)?;
-    Ok((i3, DHCPOption::OptionOverload(val)))
-}
-
-// Message Type (53)
-fn parse_message_type_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 53)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 1)(i1)?;
-    let (i3, val) = be_u8(i2)?;
-    Ok((i3, DHCPOption::MessageType(DHCPMessageType(val))))
-}
-
-// Server Identifier (54)
-fn parse_server_identifier_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 54)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
-    let (i3, addr) = parse_addr_v4(i2)?;
-    Ok((i3, DHCPOption::ServerIdentifier(addr)))
-}
-
-// Parameter Request List (55)
-fn parse_parameter_request_list_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 55)(i)?;
-    let (i2, len) = verify(be_u8, |x| *x > 0)(i1)?;
-    let (i3, val) = take(len)(i2)?;
-    Ok((
-        i3,
-        DHCPOption::ParameterRequestList(DHCPParameterRequest(val)),
-    ))
-}
-
-// Message (56)
-fn parse_message_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 56)(i)?;
-    let (i2, len) = verify(be_u8, |x| *x > 0)(i1)?;
-    let (i3, val) = take(len)(i2)?;
-    Ok((i3, DHCPOption::Message(val)))
-}
-
-// Maximum DHCP Message Size (57)
-fn parse_maximum_message_size_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 57)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 2)(i1)?;
-    let (i3, val) = be_u16(i2)?;
-    Ok((i3, DHCPOption::MaximumSize(val)))
-}
-
-// Renewal (T1) Time Value (58)
-fn parse_renewal_time_value_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 58)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
-    let (i3, val) = be_u32(i2)?;
-    Ok((i3, DHCPOption::Renewal(val)))
-}
-
-// Rebinding (T2) Time Value (59)
-fn parse_rebinding_time_value_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 59)(i)?;
-    let (i2, _) = verify(be_u8, |x| *x == 4)(i1)?;
-    let (i3, val) = be_u32(i2)?;
-    Ok((i3, DHCPOption::Rebinding(val)))
-}
-
-// Class Identifier (60)
-fn parse_class_identifier_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 60)(i)?;
-    let (i2, len) = verify(be_u8, |x| *x >= 1)(i1)?;
-    let (i3, val) = take(len)(i2)?;
-    Ok((i3, DHCPOption::ClassIdentifier(val)))
-}
-
-// Client Identifier (61)
-fn parse_client_identifier_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
-    let (i1, _) = verify(be_u8, |x| *x == 61)(i)?;
-    let (i2, len) = verify(be_u8, |x| *x >= 2)(i1)?;
-    let (i3, val) = take(len)(i2)?;
-    Ok((i3, DHCPOption::ClientIdentifier(val)))
-}
-
-fn parse_generic_option(i: &[u8]) -> IResult<&[u8], DHCPOption> {
+fn parse_generic_option(i: &[u8]) -> IResult<&[u8], DHCPGenericOption> {
     do_parse! {
         i,
         t: be_u8 >>
-        l: be_u8 >>
-        v: take!(l) >>
-        (
-            DHCPOption::Generic(DHCPGenericOption{ t, l, v: v.to_owned() })
-        )
+            l: be_u8 >>
+            v: take!(l) >>
+            (
+                DHCPGenericOption{ t, l, v }
+            )
     }
+}
+
+fn convert_generic_option<'a>(
+    i: &'a [u8],
+    opt: DHCPGenericOption<'a>,
+) -> IResult<&'a [u8], DHCPOption<'a>> {
+    let opt = match opt.t {
+        1 => {
+            nom_err_return!(i, opt.l != 4, ErrorKind::LengthValue);
+            let (_, addr) = parse_addr_v4(opt.v)?;
+            DHCPOption::SubnetMask(addr)
+        }
+        50 => {
+            nom_err_return!(i, opt.l != 4, ErrorKind::LengthValue);
+            let (_, addr) = parse_addr_v4(opt.v)?;
+            DHCPOption::RequestedIPAddress(addr)
+        }
+        51 => {
+            nom_err_return!(i, opt.l != 4, ErrorKind::LengthValue);
+            let (_, v) = be_u32(opt.v)?;
+            DHCPOption::AddressLeaseTime(v)
+        }
+        52 => {
+            nom_err_return!(i, opt.l != 1, ErrorKind::LengthValue);
+            let (_, v) = be_u8(opt.v)?;
+            DHCPOption::OptionOverload(v)
+        }
+        53 => {
+            nom_err_return!(i, opt.l != 1, ErrorKind::LengthValue);
+            let (_, v) = be_u8(opt.v)?;
+            DHCPOption::MessageType(DHCPMessageType(v))
+        }
+        54 => {
+            nom_err_return!(i, opt.l != 4, ErrorKind::LengthValue);
+            let (_, addr) = parse_addr_v4(opt.v)?;
+            DHCPOption::ServerIdentifier(addr)
+        }
+        55 => DHCPOption::ParameterRequestList(DHCPParameterRequest(opt.v)),
+        56 => DHCPOption::Message(opt.v),
+        57 => {
+            nom_err_return!(i, opt.l != 2, ErrorKind::LengthValue);
+            let (_, v) = be_u16(opt.v)?;
+            DHCPOption::MaximumSize(v)
+        }
+        58 => {
+            nom_err_return!(i, opt.l != 4, ErrorKind::LengthValue);
+            let (_, v) = be_u32(opt.v)?;
+            DHCPOption::Renewal(v)
+        }
+        59 => {
+            nom_err_return!(i, opt.l != 4, ErrorKind::LengthValue);
+            let (_, v) = be_u32(opt.v)?;
+            DHCPOption::Rebinding(v)
+        }
+        60 => DHCPOption::ClassIdentifier(opt.v),
+        61 => DHCPOption::ClientIdentifier(opt.v),
+        255 => DHCPOption::End,
+        _ => DHCPOption::Generic(opt),
+    };
+    Ok((i, opt))
 }
 
 fn parse_options(i: &[u8]) -> IResult<&[u8], Vec<DHCPOption>> {
     let mut acc = Vec::new();
     let mut i = i;
     loop {
-        let (i2, t) = be_u8(i)?; // no need to peek, we keep i
-        let (rem, opt) = match t {
-            0 => (i2, DHCPOption::Pad),
-            1 => parse_subnet_mask_option(i)?,
-            50 => parse_requested_ip_address_option(i)?,
-            51 => parse_address_lease_time_option(i)?,
-            52 => parse_option_overload_option(i)?,
-            53 => parse_message_type_option(i)?,
-            54 => parse_server_identifier_option(i)?,
-            55 => parse_parameter_request_list_option(i)?,
-            56 => parse_message_option(i)?,
-            57 => parse_maximum_message_size_option(i)?,
-            58 => parse_renewal_time_value_option(i)?,
-            59 => parse_rebinding_time_value_option(i)?,
-            60 => parse_class_identifier_option(i)?,
-            61 => parse_client_identifier_option(i)?,
-            0xff => {
-                acc.push(DHCPOption::End);
-                return Ok((i2, acc));
-            }
-            _ => parse_generic_option(i)?,
-        };
+        let (rem, opt) = parse_generic_option(i)?;
+        let (rem, opt) = convert_generic_option(rem, opt)?;
+        if let DHCPOption::End = opt {
+            acc.push(opt);
+            return Ok((rem, acc));
+        }
         acc.push(opt);
         i = rem;
     }
