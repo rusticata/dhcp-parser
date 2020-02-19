@@ -18,3 +18,6 @@ pub use dhcp_options::*;
 
 mod parser;
 pub use parser::*;
+
+mod state;
+pub use state::*;
