@@ -1,4 +1,4 @@
-use crate::dhcp_options::DHCPOption;
+use crate::dhcp_options::{DHCPMessageType, DHCPOption};
 use std::ffi::CStr;
 use std::net::Ipv4Addr;
 
@@ -78,5 +78,13 @@ impl<'a> DHCPMessage<'a> {
         } else {
             None
         }
+    }
+
+    /// Get the message type from the options, if present
+    pub fn message_type(&self) -> Option<DHCPMessageType> {
+        self.options.iter().find_map(|opt| match opt {
+            DHCPOption::MessageType(t) => Some(*t),
+            _ => None,
+        })
     }
 }

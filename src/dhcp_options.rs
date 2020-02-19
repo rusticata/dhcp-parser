@@ -78,6 +78,7 @@ impl<'a> DHCPOption<'a> {
 // --------- RFC 1553 ------------
 
 /// DHCP Message Type
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct DHCPMessageType(pub u8);
 
 /// Parameter Request List
