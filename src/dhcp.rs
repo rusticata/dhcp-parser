@@ -1,5 +1,4 @@
 use crate::dhcp_options::DHCPOption;
-use pnet_base::MacAddr;
 use std::ffi::CStr;
 use std::net::Ipv4Addr;
 
@@ -73,10 +72,9 @@ impl<'a> DHCPMessage<'a> {
     }
 
     /// Get the client hardware address (or None if there are not enough bytes)
-    pub fn hw_addr(&self) -> Option<MacAddr> {
-        let v = &self.chaddr;
-        if v.len() >= 6 {
-            Some(MacAddr::new(v[0], v[1], v[2], v[3], v[4], v[5]))
+    pub fn hw_addr(&self) -> Option<&[u8]> {
+        if self.chaddr.len() >= 6 {
+            Some(&self.chaddr[..6])
         } else {
             None
         }

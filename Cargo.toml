@@ -23,7 +23,6 @@ include = [
 
 [dependencies]
 nom = "5.0"
-pnet_base = "0.23"
 rusticata-macros = "2.0"
 
 [badges]

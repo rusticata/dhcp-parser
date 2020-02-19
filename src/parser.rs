@@ -166,7 +166,6 @@ fn parse_options(i: &[u8]) -> IResult<&[u8], Vec<DHCPOption>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pnet_base::MacAddr;
     static DHCP_DISCOVER: &'static [u8] = include_bytes!("../assets/dhcp-discover.bin");
     #[test]
     fn parse_discover() {
@@ -175,9 +174,7 @@ mod tests {
         let (_, msg) = res.expect("Parsed message");
         println!("sname: {:?}", msg.server_name());
         println!("chaddr: {:?}", msg.hw_addr());
-        assert_eq!(
-            msg.hw_addr(),
-            Some(MacAddr(0x00, 0x0b, 0x82, 0x01, 0xfc, 0x42))
-        );
+        const EXPECTED: &[u8] = &[0x00, 0x0b, 0x82, 0x01, 0xfc, 0x42];
+        assert_eq!(msg.hw_addr(), Some(EXPECTED));
     }
 }
